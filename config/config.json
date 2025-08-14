@@ -1,0 +1,44 @@
+{
+  "CONFIG_FILE_PATH": "config/config.json",
+  "RUNNING_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\",
+  "DETECTION_RESULT_FILE": "detection_results.csv",
+  "CSV_R_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\clothing_detection\\results_clothing_detection_20250814_2.csv",
+  "CSV_PEOPLE_DETECTION": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\people_detection\\results_people_detection_20250814_4.csv",
+  "RESULTS_PREDICT_DIR": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\",
+  "VIDEO_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\public\\videos\\",
+  "AI_MODEL_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\model\\",
+  "AI_MODEL_NAME": "fashion13cls.pt",
+  "TRACKING_AI": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\yolo11n.pt",
+  "GET_COLOR_MODEL": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\model\\segmentModel.pt",
+  "PROCESSED_LOG": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\log\\processed_files.txt",
+  "LOG_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\log\\prediction_log.csv",
+  "EXAMPLE_PICS_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\public\\picture\\example_pics\\",
+  "API_CONFIG": {
+    "host": "12.0.0.1",
+    "port": 8000,
+    "reload": true,
+    "log_level": "info"
+  },
+  "FAST_API": "http://localhost:8000",
+  "IMAGE_CONFIG": {
+    "max_file_size": 10485760,
+    "allowed_formats": [
+      "image/jpeg",
+      "image/jpg",
+      "image/png"
+    ],
+    "temp_dir": "./temp/"
+  },
+  "COLOR_DETECTION": {
+    "enabled": true,
+    "k_clusters": 3,
+    "color_bins": 8
+  },
+  "MODEL_CONFIG": {
+    "confidence_threshold": 0.3,
+    "frequency": 0.5,
+    "detectingAll": false,
+    "iou_threshold": 0.59,
+    "max_detections": 1000
+  }
+}
