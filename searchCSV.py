@@ -2,18 +2,9 @@
 import pandas as pd
 from typing import List, Optional
 from config import load_config
-import os
+
 import numpy as np
 
-
-config = load_config()
-# โหลด CSV ไว้ล่วงหน้า (หรือโหลดจาก parameter ได้)
-DF = pd.read_csv(config.get("CSV_R_PATH"))  # แก้ชื่อไฟล์ตามจริง
-last_modified_DF = os.path.getmtime(config.get("CSV_R_PATH"))
-if DF is not None:
-    print("Summary result loaded successfully")
-else:
-    print("Summary result not found")
 
 def filter_by_filename(df: pd.DataFrame, filenames: List[str]) -> pd.DataFrame:
     return df[df["filename"].isin(filenames)]
@@ -29,7 +20,7 @@ def filter_single_class(df: pd.DataFrame, classes:  List[str]) -> pd.DataFrame:
 
 # filter by class with collab 
 def filter_collab_class(df: pd.DataFrame, classes:  List[str]) -> pd.DataFrame:
-    """
+    """ 
     กรองเฉพาะ timestamp ที่มีครบทุก class ที่ระบุใน classes
     """
     matched_frames = []
@@ -83,16 +74,12 @@ def prepare_and_find_similar_colors(df: pd.DataFrame, input_colors_hex, threshol
 
 
 def search_csv(data) -> pd.DataFrame:
-    global DF
-    global last_modified_DF
-    # ตรวจสอบว่าไฟล์ csv ถูกแก้ไขหรือไม่
-    check_modified = os.path.getmtime(config.get("CSV_R_PATH"))
-    if check_modified != last_modified_DF:
-        DF = pd.read_csv(config.get("CSV_R_PATH"))  # แก้ชื่อไฟล์ตามจริง
-        last_modified_DF = check_modified
+    config = load_config()
+
+    DF = pd.read_csv(config.get("CSV_R_PATH"))  # แก้ชื่อไฟล์ตามจริง
     try:
         df = DF.copy()
-        filtered=False
+        filtered=False  
         # หาจากชื่อ file
         if data.filename:
             df = filter_by_filename(df, data.filename)

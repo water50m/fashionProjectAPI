@@ -247,7 +247,9 @@ def get_all_data_people():
 
     return df
 
-
+def get_data_csv_with_path(path):
+    df = pd.read_csv(path)
+    return df
 
 
 

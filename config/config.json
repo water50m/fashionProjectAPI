@@ -2,10 +2,20 @@
   "CONFIG_FILE_PATH": "config/config.json",
   "RUNNING_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\",
   "DETECTION_RESULT_FILE": "detection_results.csv",
-  "CSV_R_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\clothing_detection\\results_clothing_detection_20250814_2.csv",
-  "CSV_PEOPLE_DETECTION": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\people_detection\\results_people_detection_20250814_4.csv",
+
+
+  "CSV_CUSTOM_RESULT_PREDICT_DIR": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\custom_detection\\",
+  "CSV_CUSTOM_RESULT_PERSON": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\custom_detection\\people_detection\\results_people_detection_20250815_1.csv",
+  "CSV_CUSTOM_RESULT_CLOTHING": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\custom_detection\\clothing_detection\\results_clothing_detection_20250815_1.csv",
+
+
+  "CSV_R_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\clothing_detection\\results_clothing_detection_20250815_1.csv",
+  "CSV_PEOPLE_DETECTION": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\people_detection\\results_people_detection_20250815_1.csv",
   "RESULTS_PREDICT_DIR": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\running\\detection_results\\",
+
+
   "VIDEO_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\public\\videos\\",
+  "PERSON_TRACK_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\yolo11n.pt",
   "AI_MODEL_PATH": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\model\\",
   "AI_MODEL_NAME": "fashion13cls.pt",
   "TRACKING_AI": "E:\\ALL_CODE\\nextjs\\fashion_project_1\\scripts\\yolo11n.pt",

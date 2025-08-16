@@ -84,27 +84,27 @@ def load_config_(custom_path=None):
 # ===============================
 # SETUP RESULT CSV
 # ===============================
-def get_result_csv(detect_all,type_of_detection):
+def get_result_csv(dir,detect_all,type_of_detection):
     cfg = load_config_()
     date_str = datetime.datetime.now().strftime("%Y%m%d")
-    os.makedirs(cfg["RESULTS_PREDICT_DIR"], exist_ok=True)
+    os.makedirs(dir, exist_ok=True)
     if detect_all:
         # สร้างไฟล์ใหม่ ถ้าวันเดียวกันซ้ำ ให้เพิ่มเลขต่อท้าย
-        base_name = os.path.join(cfg["RESULTS_PREDICT_DIR"], f"{type_of_detection}\\results_{type_of_detection}_{date_str}.csv")
+        base_name = os.path.join(dir, f"{type_of_detection}\\results_{type_of_detection}_{date_str}.csv")
         if not os.path.exists(base_name):
             return base_name
         counter = 1
         while True:
-            new_name = os.path.join(cfg["RESULTS_PREDICT_DIR"], f"{type_of_detection}\\results_{type_of_detection}_{date_str}_{counter}.csv")
+            new_name = os.path.join(dir, f"{type_of_detection}\\results_{type_of_detection}_{date_str}_{counter}.csv")
             if not os.path.exists(new_name):
                 return new_name
             counter += 1
     else:
         # ใช้ไฟล์ล่าสุด
-        files = [f for f in os.listdir(cfg["RESULTS_PREDICT_DIR"]) if f.startswith(f"{type_of_detection}\\results_{type_of_detection}_{date_str}")]
+        files = [f for f in os.listdir(dir) if f.startswith(f"{type_of_detection}\\results_{type_of_detection}_{date_str}")]
         if files:
-            return os.path.join(cfg["RESULTS_PREDICT_DIR"], sorted(files)[-1])
-        return os.path.join(cfg["RESULTS_PREDICT_DIR"], f"{type_of_detection}\\results_{type_of_detection}_{date_str}.csv")
+            return os.path.join(dir, sorted(files)[-1])
+        return os.path.join(dir, f"{type_of_detection}\\results_{type_of_detection}_{date_str}.csv")
 
 # ===============================
 # LOAD/UPDATE PROCESSED FILES
@@ -210,14 +210,14 @@ def get_color_dominant(image):
     colors = kmeans.cluster_centers_  # RGB
     counts = np.bincount(kmeans.labels_)
     dominant = colors[np.argmax(counts)][::-1]
-    return dominant
+    return str(dominant)
 # ===============================
 # DETECTION FUNCTION
 # ===============================
 
 
 def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_detection_csv,class_selected=None):
-    
+
     cap = cv2.VideoCapture(video_path)
 
     width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -225,7 +225,7 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
     fps = cap.get(cv2.CAP_PROP_FPS)
     frame_index = 0
     
-    clean_detections = []
+    clean_detections_clothing = []
     people_detections = []
     seen_track_ids = set()
     frame_interval = int(fps * cfg["frequency"])  # ตรวจจับทุก cfg["frequency"] วินาที
@@ -244,14 +244,14 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
                 verbose=False,
                 tracker='botsort.yaml'
             )[0]
-            
+             
             if track_results.boxes.id is not None:
                 for box, tid in zip(track_results.boxes.xyxy, track_results.boxes.id):
                     detections = []
                     x1, y1, x2, y2 = map(int, box.tolist())
                     person_crop = frame[y1:y2, x1:x2]
                     timestamp = round(frame_index / fps, 2)
-                    # Predict เสื้อผ้าเฉพาะเมื่อมี track_id ใหม่
+                    # Predict เสื้อผ้าเฉพาะเมื่อมี track_id ใหม่ 
                     if tid not in seen_track_ids:
                         # seen_track_ids.add(tid) # ถ้าต้องการให้ตรวจครั้งเดียว
                         conf_thres = cfg.get("confidence")
@@ -259,9 +259,10 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
                             source=person_crop, 
                             verbose=False,
                             conf=conf_thres,
-                            classes=class_selected
+                            classes=None if not class_selected else class_selected
                         )[0]
-
+                        class_ids = predict_results.boxes.cls.cpu().numpy()
+                        
                         people_detections.append({
                             "predict_id": str(uuid.uuid4()),
                             "filename": filename,
@@ -289,7 +290,7 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
                                 "width": width,
                                 "height": height,
                                 "timestamp": timestamp,
-                                "class": cls_b,
+                                "class": int(cls_b),
                                 "class_name": CLASS_NAMES_B[cls_b],
                                 "confidence": round(conf_b, 2), 
                                 "x_person": x1,
@@ -304,7 +305,7 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
                                 "mean_color_bgr": mean_color_bgr
                             })
                         data_cleaned = clean_data(detections)
-                        clean_detections.extend(data_cleaned)
+                        clean_detections_clothing.extend(data_cleaned)
         frame_index += 1
 
     cap.release()
@@ -313,8 +314,8 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
     fieldnames_people = [
             "predict_id","filename","timestamp","track_id","width","height","x_person","y_person","w_person","h_person"
         ]
-    save_result(output_csv,fieldnames_people,clean_detections)
-    config.update({"CSV_PEOPLE_DETECTION": resultpeople_detection_csv})
+    save_result(resultpeople_detection_csv,fieldnames_people,people_detections)
+    
     fieldnames_clothing = [
             "predict_id", "filename", "width", "height", "timestamp",
             "class", "class_name", "confidence",
@@ -322,10 +323,17 @@ def detect_objects(video_path, model_A, model_B,  output_csv, cfg,resultpeople_d
             "x_clothing", "y_clothing", "w_clothing", "h_clothing",
             "mean_color_bgr", "track_id"
         ]
-    save_result(resultpeople_detection_csv,fieldnames_clothing,people_detections)
-    config.update({"CSV_R_PATH": output_csv})
+  
+    save_result(output_csv,fieldnames_clothing,clean_detections_clothing)
+    if class_selected==None:
+        config.update({"CSV_PEOPLE_DETECTION": resultpeople_detection_csv})
+        config.update({"CSV_R_PATH": output_csv})
+    else:
+        config.update({"CSV_CUSTOM_RESULT_PERSON": resultpeople_detection_csv})
+        config.update({"CSV_CUSTOM_RESULT_CLOTHING": output_csv})
     
     save_config(config)
+    return clean_detections_clothing
 # ========================================
 # Save result
 # ========================================
@@ -453,12 +461,13 @@ def process_videos(detect_all=True, custom_config=None):
     print("model A: ",cfg["TRACKING_AI"])
     print("model B: ",cfg["AI_MODEL_PATH"])
     video_files = get_video_files([cfg["VIDEO_PATH"]])
+    dir = cfg["RESULTS_PREDICT_DIR"]
     processed = set()
     scanned_file = 0
 
 
-    output_csv = get_result_csv(detect_all,"clothing_detection")
-    resultpeople_detection_csv = get_result_csv(detect_all,"people_detection")
+    output_csv = get_result_csv(dir,detect_all,"clothing_detection")
+    resultpeople_detection_csv = get_result_csv(dir,detect_all,"people_detection")
 
     if not detect_all:
         processed = load_processed_files()

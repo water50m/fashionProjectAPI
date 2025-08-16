@@ -6,18 +6,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from searchCSV import search_csv
+from searchCSV import search_csv,prepare_and_find_similar_colors
 from prediction_img import YOLOPredictor
 from fastapi import File, UploadFile
 import tempfile
-from scripts import scan_all, load_detection_data, process_track_data, get_data_from_csv, get_all_data, get_data_people_from_csv  
-from multiprocessing import Process, Event
-from detection_tracking_save import start_process,detect_objects
+from scripts import scan_all, load_detection_data, process_track_data, get_data_from_csv, get_all_data, get_data_people_from_csv, get_data_csv_with_path
+from multiprocessing import Event
+from detection_tracking_save import start_process,detect_objects,get_result_csv,load_config_
 from config import load_config
 from fastapi.staticfiles import StaticFiles
 import os
 from config import load_config, save_config, CONFIG_FILE
-
+import pandas as pd
+from ultralytics import YOLO
+import traceback
+import numpy as np
 import sys
 
 config = load_config()
@@ -378,7 +381,7 @@ def read_csv():
 
 
 
-# ---------------------------custom_detection--------------------------------
+# ---------------------------custom_detection-----------------------------------------------------------------
 class classAndColor(BaseModel):
     classId: int
     colors: list[str]
@@ -391,15 +394,79 @@ class CustomDetectionData(BaseModel):
 
 @app.post("/custom-detection-start")
 def custom_detection_start(data:CustomDetectionData):
-    try:
-        print('custom-detection API success')
-        print(data)
-        # model_A = YOLO(config.get("AI_MODEL_PATH", ""))
-        
-        # detect_objects(data.videos ,model_A ,data.model ,)
 
+    try:
+
+        model_A = YOLO(config.get("PERSON_TRACK_PATH", ""))
+        model_B = YOLO(config.get("AI_MODEL_PATH", "")+"/"+data.model)
+        path = config.get("VIDEO_PATH", "")
+        dir = config.get("CSV_CUSTOM_RESULT_PREDICT_DIR", "")
+         
+        output_csv = get_result_csv(dir,True,"clothing_detection")
+        resultpeople_detection_csv = get_result_csv(dir,True,"people_detection")
+        class_selected = []
+        result = []
+        cfg = load_config_()
+        for class_ in data.custom_detection_data:
+            class_selected.append(class_.classId)
+
+        for video in data.videos:
+            video_path = os.path.join(path, video)
+            detect = detect_objects(video_path ,model_A ,model_B ,output_csv,cfg,resultpeople_detection_csv,class_selected)
+            result.extend(detect)
+
+        if not result:
+            return []
+            
+        df = pd.DataFrame(result)
+        filtered_results = []
+        
+        if data.custom_detection_data:
+            for item in data.custom_detection_data:
+                print(f'Processing class ID: {item.classId} with colors: {item.colors}')
+                filtered = df[df['class'] == item.classId].copy()
+                print("filtered",filtered)
+                if not filtered.empty:
+                    print(f'Found {len(filtered)} matches for class ID {item.classId}')
+                    try:
+                        filtered = prepare_and_find_similar_colors(filtered, item.colors, 100)
+                        filtered_results.append(filtered)
+                    except Exception as e:
+                        print(f'Error processing class {item.classId}: {str(e)}')
+                        continue
+        
+        if filtered_results:
+            print(f'Found {len(filtered_results)} matches for class ID {item.classId}')
+            try:
+                final_df = pd.concat(filtered_results, ignore_index=True)
+                return final_df.to_dict(orient="records")
+            except Exception as e:
+                print(f'Error concatenating results: {str(e)}')
+                return []
+        else:
+            for col in df.columns:
+                if np.issubdtype(df[col].dtype, np.number):
+                    print(col, df[col].dtype)
+            # If no custom detection data or no matches, return all results
+            print("df",df)
+            return df.to_dict(orient="records")
     except Exception as e:
-        return {"error": str(e)}
+        # เก็บ stack trace ทั้งหมดเป็น string
+        full_traceback = traceback.format_exc()
+        print(full_traceback)  # log เต็ม
+
+        # ดึงข้อมูลไฟล์และบรรทัดที่เกิด error
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+
+        # รวมข้อความสรุป + stack trace
+        error_message = f"Error: {str(e)}\nFile: {filename}, Line: {line_number}\n\nStack Trace:\n{full_traceback}"
+
+        # ส่งกลับใน HTTPException
+        raise HTTPException(status_code=500, detail=error_message)
+
+   
 
 if __name__ == "__main__":
     try:
